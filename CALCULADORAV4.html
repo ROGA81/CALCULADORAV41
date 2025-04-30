@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Precio de Venta</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #e9ecef; /* Fondo claro */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px; /* Añadido padding para mejor espaciado en pantallas pequeñas */
+        }
+        .calculator-container {
+            background-color: #343a40; /* Contenedor oscuro */
+            color: #f8f9fa; /* Texto claro */
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+            margin-bottom: 20px; /* Espacio entre el formulario y la tabla/gráfica */
+        }
+        .form-label {
+            color: #adb5bd;
+            margin-bottom: 0.5rem;
+        }
+        .form-control {
+            background-color: #495057;
+            color: #fff;
+            border: 1px solid #6c757d;
+        }
+        .form-control:focus {
+            background-color: #495057;
+            color: #fff;
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .result-container {
+            padding: 20px;
+            background-color: #f8f9fa; /* Fondo claro para resaltar */
+            color: #343a40; /* Texto oscuro */
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .result-container h4 {
+            color: #343a40;
+            margin-bottom: 10px;
+        }
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .profit-margin {
+            font-size: 1rem;
+            color: #ffc107;
+        }
+        .profit-margin.negative {
+            color: #dc3545; /* Rojo para margen negativo */
+        }
+        .icon {
+            margin-right: 5px;
+        }
+        #calculationTable {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: #fff; /* Fondo claro para la tabla */
+            color: #343a40; /* Texto oscuro para la tabla */
+            border-radius: 8px;
+            overflow: hidden; /* Para redondear las esquinas */
+        }
+        #calculationTable th, #calculationTable td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        #calculationTable th {
+            background-color: #007bff;
+            color: #fff;
+            font-weight: bold;
+        }
+        #calculationTable tr:last-child td {
+            border-bottom: none;
+        }
+        .export-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .btn-export {
+            background-color: #6c757d;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        .btn-export:hover {
+            background-color: #545b62;
+        }
+        #profitChartCanvas {
+            width: 100%;
+            max-height: 300px;
+            margin-top: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+        }
+        .chart-container {
+            display: none; /* Oculto inicialmente */
+        }
+    </style>
+</head>
+<body class="bg-secondary d-flex flex-column align-items-center justify-content-center">
+    <div class="calculator-container animate__animated animate__fadeIn">
+        <h2 class="mb-4 text-center"><i class="bi bi-tag-fill icon"></i> Calculadora de Precio de Venta</h2>
+        <form id="priceCalculator">
+            <div class="mb-3">
+                <label for="conceptoProducto" class="form-label"><i class="bi bi-pencil-fill icon"></i> Concepto del Producto:</label>
+                <input type="text" class="form-control" id="conceptoProducto" placeholder="Ingrese el nombre del producto" required>
+            </div>
+            <div class="mb-3">
+                <label for="costoBase" class="form-label"><i class="bi bi-cash-coin icon"></i> Costo Base:</label>
+                <input type="number" class="form-control" id="costoBase" placeholder="Ingrese el costo del producto" required>
+            </div>
+            <div class="mb-3">
+                <label for="gananciaPorcentaje" class="form-label"><i class="bi bi-percent icon"></i> Ganancia Deseada (%):</label>
+                <input type="number" class="form-control" id="gananciaPorcentaje" placeholder="Ingrese el porcentaje de ganancia" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-calculator-fill icon"></i> Calcular Precio</button>
+        </form>
+    </div>
+
+    <div id="resultado" class="result-container mt-4 animate__animated animate__fadeIn" style="display: none;">
+        <h4><i class="bi bi-check-circle-fill icon"></i> Precio de Venta Sugerido:</h4>
+        <p class="result-value" id="precioVenta"></p>
+        <p class="profit-margin" id="margenGanancia"></p>
+
+        <table id="calculationTable" class="mt-3">
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Costo Base</th>
+                    <th>Margen de Ganancia</th>
+                    <th>Precio Sugerido</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr id="calculationRow">
+                    <td></td>
+                    <td></td>
+                    <td class="profit-value"></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="export-buttons">
+            <button class="btn btn-secondary btn-export" onclick="exportToExcel()"><i class="bi bi-file-earmark-excel-fill icon"></i> Exportar a Excel</button>
+            <button class="btn btn-secondary btn-export" onclick="exportToPDF()"><i class="bi bi-file-earmark-pdf-fill icon"></i> Exportar a PDF</button>
+        </div>
+    </div>
+
+    <div id="chartContainer" class="chart-container mt-4 animate__animated animate__fadeIn" style="display: none;">
+        <h4><i class="bi bi-graph-up icon"></i> Margen de Ganancia</h4>
+        <canvas id="profitChartCanvas"></canvas>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.1/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        let profitChart; // Variable para almacenar la instancia del gráfico
+
+        document.getElementById('priceCalculator').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const conceptoProducto = document.getElementById('conceptoProducto').value;
+            const costoBase = parseFloat(document.getElementById('costoBase').value);
+            const gananciaPorcentaje = parseFloat(document.getElementById('gananciaPorcentaje').value);
+
+            if (isNaN(costoBase) || isNaN(gananciaPorcentaje)) {
+                alert('Por favor, ingrese valores numéricos válidos.');
+                return;
+            }
+
+            const margenDecimal = gananciaPorcentaje / 100;
+            const precioVenta = costoBase / (1 - margenDecimal);
+            const gananciaAbsoluta = precioVenta - costoBase;
+
+            document.getElementById('precioVenta').textContent = `$${precioVenta.toFixed(2)}`;
+            const margenGananciaElement = document.getElementById('margenGanancia');
+            margenGananciaElement.textContent = `Margen de Ganancia: $${gananciaAbsoluta.toFixed(2)} (${gananciaPorcentaje.toFixed(2)}%)`;
+            if (gananciaPorcentaje < 0) {
+                margenGananciaElement.classList.add('negative');
+            } else {
+                margenGananciaElement.classList.remove('negative');
+            }
+
+            // Actualizar la tabla
+            const calculationRow = document.getElementById('calculationRow');
+            calculationRow.cells[0].textContent = conceptoProducto;
+            calculationRow.cells[1].textContent = `$${costoBase.toFixed(2)}`;
+            const profitValueCell = calculationRow.cells[2];
+            profitValueCell.textContent = `${gananciaPorcentaje.toFixed(2)}%`;
+            if (gananciaPorcentaje < 0) {
+                profitValueCell.classList.add('negative');
+            } else {
+                profitValueCell.classList.remove('negative');
+            }
+            calculationRow.cells[3].textContent = `$${precioVenta.toFixed(2)}`;
+
+            const resultadoDiv = document.getElementById('resultado');
+            resultadoDiv.style.display = 'block';
+            resultadoDiv.classList.remove('animate__fadeIn');
+            void resultadoDiv.offsetWidth;
+            resultadoDiv.classList.add('animate__fadeIn');
+
+            // Mostrar y actualizar el gráfico
+            document.getElementById('chartContainer').style.display = 'block';
+            updateProfitChart(conceptoProducto, gananciaPorcentaje);
+            document.getElementById('chartContainer').classList.remove('animate__fadeIn');
+            void document.getElementById('chartContainer').offsetWidth;
+            document.getElementById('chartContainer').classList.add('animate__fadeIn');
+        });
+
+        function updateProfitChart(label, data) {
+            const ctx = document.getElementById('profitChartCanvas').getContext('2d');
+
+            if (profitChart) {
+                profitChart.destroy(); // Destruir el gráfico anterior si existe
+            }
+
+            profitChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [label],
+                    datasets: [{
+                        label: 'Margen de Ganancia (%)',
+                        data: [data],
+                        backgroundColor: data >= 0 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)',
+                        borderColor: data >= 0 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Porcentaje'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Margen de Ganancia por Producto',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: false // Ocultar la leyenda ya que solo hay un dato
+                        }
+                    }
+                }
+            });
+        }
+
+        function exportToExcel() {
+            const concepto = document.getElementById('calculationRow').cells[0].textContent;
+            const costo = document.getElementById('calculationRow').cells[1].textContent;
+            const margen = document.getElementById('calculationRow').cells[2].textContent;
+            const precio = document.getElementById('calculationRow').cells[3].textContent;
+
+            const wb = XLSX.utils.book_new();
+            const ws_data = [
+                ["Concepto", "Costo Base", "Margen de Ganancia", "Precio Sugerido"],
+                [concepto, costo, margen, precio]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, ws, "Precio de Venta");
+            XLSX.writeFile(wb, "precio_venta.xlsx");
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.autoTable({
+                head: [['Concepto', 'Costo Base', 'Margen de Ganancia', 'Precio Sugerido']],
+                body: [
+                    [
+                        document.getElementById('calculationRow').cells[0].textContent,
+                        document.getElementById('calculationRow').cells[1].textContent,
+                        document.getElementById('calculationRow').cells[2].textContent,
+                        document.getElementById('calculationRow').cells[3].textContent
+                    ]
+                ]
+            });
+
+            doc.save('precio_venta.pdf');
+        }
+    </script>
+</body>
+</html>
